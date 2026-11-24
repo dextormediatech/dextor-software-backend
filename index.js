@@ -1,0 +1,48 @@
+
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import { connectToDb } from "./utils/db.js";
+import authRoutes from "./routes/auth.routes.js";
+import clientRoutes from "./routes/client.routes.js";
+
+dotenv.config();
+
+const app = express();
+
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+app.use(async (req, res, next) => {
+  try {
+    await connectToDb();
+    next();
+  } catch (error) {
+    console.error("Database connection failed:", error);
+    res.status(500).json({
+      success: false,
+      message: "Database connection failed",
+    });
+  }
+});
+
+app.use("/api/auth", authRoutes);
+app.use("/api/clients", clientRoutes);
+
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "DEXTOR MEDIATECH API is running",
+  });
+});
+
+export default app;
+
