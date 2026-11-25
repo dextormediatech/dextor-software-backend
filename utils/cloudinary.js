@@ -58,4 +58,38 @@ export const uploadClientLogo = async (logoInput) => {
   return result.secure_url;
 };
 
+export const uploadQuotationPdf = async (pdfBase64, fileName = "quotation") => {
+  if (!pdfBase64 || typeof pdfBase64 !== "string") {
+    return undefined;
+  }
+
+  const trimmed = pdfBase64.trim();
+  if (!trimmed) return undefined;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return { secure_url: trimmed };
+  }
+
+  ensureCloudinaryConfig();
+
+  const dataUri = trimmed.startsWith("data:")
+    ? trimmed
+    : `data:application/pdf;base64,${trimmed}`;
+
+  const safeName = String(fileName)
+    .replace(/[^a-zA-Z0-9_-]/g, "_")
+    .slice(0, 60);
+
+  const result = await cloudinary.uploader.upload(dataUri, {
+    folder: "dextor_mediatech/quotations",
+    resource_type: "raw",
+    public_id: `${safeName}_${Date.now()}.pdf`,
+  });
+
+  return {
+    secure_url: result.secure_url,
+    public_id: result.public_id,
+  };
+};
+
 export default cloudinary;

@@ -5,6 +5,8 @@ import cors from "cors";
 import { connectToDb } from "./utils/db.js";
 import authRoutes from "./routes/auth.routes.js";
 import clientRoutes from "./routes/client.routes.js";
+import serviceRoutes from "./routes/service.routes.js";
+import quotationRoutes from "./routes/quotation.routes.js";
 
 dotenv.config();
 
@@ -36,6 +38,8 @@ app.use(async (req, res, next) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/clients", clientRoutes);
+app.use("/api/services", serviceRoutes);
+app.use("/api/quotations", quotationRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({
