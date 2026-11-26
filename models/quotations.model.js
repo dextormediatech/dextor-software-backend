@@ -4,7 +4,16 @@ const quotationItemSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
     description: { type: String, default: "", trim: true },
-    amount: { type: Number, required: true, min: 0 },
+    billing: { type: String, default: "One-Time", trim: true },
+    amount: { type: mongoose.Schema.Types.Mixed, required: true },
+  },
+  { _id: false }
+);
+
+const deliverableItemSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true, trim: true },
+    description: { type: String, default: "", trim: true },
   },
   { _id: false }
 );
@@ -35,6 +44,9 @@ const quotationSchema = new mongoose.Schema(
       validate: [(v) => Array.isArray(v) && v.length > 0, "At least one quotation item is required"],
     },
     totalAmount: { type: Number, required: true, min: 0 },
+    includeDeliverables: { type: Boolean, default: false },
+    deliverables: { type: [deliverableItemSchema], default: [] },
+    includeCoordinator: { type: Boolean, default: false },
     notes: { type: String, default: "", trim: true },
     terms: { type: String, default: "", trim: true },
     signatures: {

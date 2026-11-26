@@ -7,6 +7,8 @@ import authRoutes from "./routes/auth.routes.js";
 import clientRoutes from "./routes/client.routes.js";
 import serviceRoutes from "./routes/service.routes.js";
 import quotationRoutes from "./routes/quotation.routes.js";
+import invoiceRoutes from "./routes/invoice.routes.js";
+import receiptRoutes from "./routes/receipt.routes.js";
 
 dotenv.config();
 
@@ -40,6 +42,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/clients", clientRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/quotations", quotationRoutes);
+app.use("/api/invoices", invoiceRoutes);
+app.use("/api/receipts", receiptRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({

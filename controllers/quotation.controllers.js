@@ -87,6 +87,9 @@ export const createQuotation = async (req, res) => {
       serviceDepartment,
       title,
       items,
+      includeDeliverables,
+      deliverables,
+      includeCoordinator,
       notes,
       terms,
       signatures,
@@ -109,13 +112,33 @@ export const createQuotation = async (req, res) => {
       });
     }
 
+    const parseItemAmount = (val) => {
+      const str = String(val ?? "").trim();
+      if (!str) return 0;
+      const num = Number(str);
+      return Number.isNaN(num) ? str : num;
+    };
+
     const normalizedItems = items.map((item) => ({
       title: String(item.title || "").trim(),
       description: String(item.description || "").trim(),
-      amount: Number(item.amount) || 0,
+      billing: String(item.billing || "One-Time").trim(),
+      amount: parseItemAmount(item.amount),
     }));
 
-    const totalAmount = normalizedItems.reduce((sum, item) => sum + item.amount, 0);
+    const normalizedDeliverables =
+      includeDeliverables && Array.isArray(deliverables)
+        ? deliverables
+            .filter((d) => d?.title?.trim())
+            .map((d) => ({
+              title: String(d.title || "").trim(),
+              description: String(d.description || "").trim(),
+            }))
+        : [];
+
+    const totalAmount = normalizedItems
+      .filter((item) => item.billing.toLowerCase() === "one-time" && typeof item.amount === "number")
+      .reduce((sum, item) => sum + item.amount, 0);
     const prefix = getQuotationPrefix(serviceDepartment, serviceName);
     const finalNumber =
       quotationNumber?.trim() && /^(DM|SD)-\d+$/i.test(quotationNumber.trim())
@@ -153,6 +176,9 @@ export const createQuotation = async (req, res) => {
       title: title.trim(),
       items: normalizedItems,
       totalAmount,
+      includeDeliverables: Boolean(includeDeliverables),
+      deliverables: normalizedDeliverables,
+      includeCoordinator: Boolean(includeCoordinator),
       notes: (notes || "").trim(),
       terms: (terms || "").trim(),
       signatures: {
@@ -204,6 +230,9 @@ export const updateQuotation = async (req, res) => {
       serviceName,
       title,
       items,
+      includeDeliverables,
+      deliverables,
+      includeCoordinator,
       notes,
       terms,
       signatures,
@@ -222,12 +251,35 @@ export const updateQuotation = async (req, res) => {
     if (serviceName !== undefined && serviceName.trim()) quotation.serviceName = serviceName.trim();
     if (title !== undefined && title.trim()) quotation.title = title.trim();
     if (Array.isArray(items) && items.length > 0) {
-      quotation.items = items.map((item) => ({
-        title: String(item.title || "").trim(),
-        description: String(item.description || "").trim(),
-        amount: Number(item.amount) || 0,
-      }));
-      quotation.totalAmount = quotation.items.reduce((sum, item) => sum + item.amount, 0);
+      quotation.items = items.map((item) => {
+        const str = String(item.amount ?? "").trim();
+        const num = Number(str);
+        return {
+          title: String(item.title || "").trim(),
+          description: String(item.description || "").trim(),
+          billing: String(item.billing || "One-Time").trim(),
+          amount: str && !Number.isNaN(num) ? num : str || 0,
+        };
+      });
+      quotation.totalAmount = quotation.items
+        .filter((item) => item.billing.toLowerCase() === "one-time" && typeof item.amount === "number")
+        .reduce((sum, item) => sum + item.amount, 0);
+    }
+    if (includeDeliverables !== undefined) {
+      quotation.includeDeliverables = Boolean(includeDeliverables);
+    }
+    if (Array.isArray(deliverables)) {
+      quotation.deliverables = quotation.includeDeliverables
+        ? deliverables
+            .filter((d) => d?.title?.trim())
+            .map((d) => ({
+              title: String(d.title || "").trim(),
+              description: String(d.description || "").trim(),
+            }))
+        : [];
+    }
+    if (includeCoordinator !== undefined) {
+      quotation.includeCoordinator = Boolean(includeCoordinator);
     }
     if (notes !== undefined) quotation.notes = notes.trim();
     if (terms !== undefined) quotation.terms = terms.trim();

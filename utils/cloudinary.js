@@ -58,7 +58,7 @@ export const uploadClientLogo = async (logoInput) => {
   return result.secure_url;
 };
 
-export const uploadQuotationPdf = async (pdfBase64, fileName = "quotation") => {
+export const uploadQuotationPdf = async (pdfBase64, fileName = "quotation", folderName = "dextor_mediatech/quotations") => {
   if (!pdfBase64 || typeof pdfBase64 !== "string") {
     return undefined;
   }
@@ -81,7 +81,7 @@ export const uploadQuotationPdf = async (pdfBase64, fileName = "quotation") => {
     .slice(0, 60);
 
   const result = await cloudinary.uploader.upload(dataUri, {
-    folder: "dextor_mediatech/quotations",
+    folder: folderName,
     resource_type: "raw",
     public_id: `${safeName}_${Date.now()}.pdf`,
   });
