@@ -1,5 +1,8 @@
 import "dotenv/config";
+import https from "node:https";
 import { v2 as cloudinary } from "cloudinary";
+
+const ipv4Agent = new https.Agent({ family: 4, keepAlive: true });
 
 const ensureCloudinaryConfig = () => {
   let cloud_name = process.env.CLOUDINARY_CLOUD_NAME?.trim();
@@ -84,6 +87,8 @@ export const uploadQuotationPdf = async (pdfBase64, fileName = "quotation", fold
     folder: folderName,
     resource_type: "raw",
     public_id: `${safeName}_${Date.now()}.pdf`,
+    timeout: 60000,
+    agent: ipv4Agent,
   });
 
   return {

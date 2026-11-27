@@ -118,14 +118,21 @@ export const createReceipt = async (req, res) => {
     let pdfUrl = "";
     let cloudinaryPublicId = "";
     if (pdfBase64) {
-      const uploaded = await uploadQuotationPdf(
-        pdfBase64,
-        `${safeClientName}_receipt`,
-        "dextor_mediatech/receipts"
-      );
-      if (uploaded) {
-        pdfUrl = uploaded.secure_url || "";
-        cloudinaryPublicId = uploaded.public_id || "";
+      try {
+        const uploaded = await uploadQuotationPdf(
+          pdfBase64,
+          `${safeClientName}_receipt`,
+          "dextor_mediatech/receipts"
+        );
+        if (uploaded) {
+          pdfUrl = uploaded.secure_url || "";
+          cloudinaryPublicId = uploaded.public_id || "";
+        }
+      } catch (uploadErr) {
+        console.error(
+          "Receipt PDF upload failed (saving receipt without cloud URL):",
+          uploadErr?.message || uploadErr
+        );
       }
     }
 

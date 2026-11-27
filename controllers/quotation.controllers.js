@@ -155,10 +155,17 @@ export const createQuotation = async (req, res) => {
     let pdfUrl = "";
     let cloudinaryPublicId = "";
     if (pdfBase64) {
-      const uploaded = await uploadQuotationPdf(pdfBase64, pdfFileName);
-      if (uploaded) {
-        pdfUrl = uploaded.secure_url || "";
-        cloudinaryPublicId = uploaded.public_id || "";
+      try {
+        const uploaded = await uploadQuotationPdf(pdfBase64, pdfFileName);
+        if (uploaded) {
+          pdfUrl = uploaded.secure_url || "";
+          cloudinaryPublicId = uploaded.public_id || "";
+        }
+      } catch (uploadErr) {
+        console.error(
+          "Quotation PDF upload failed (saving quotation without cloud URL):",
+          uploadErr?.message || uploadErr
+        );
       }
     }
 
@@ -306,10 +313,17 @@ export const updateQuotation = async (req, res) => {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "_")
         .replace(/^_+|_+$/g, "");
-      const uploaded = await uploadQuotationPdf(pdfBase64, `${safeClientName}_quotation`);
-      if (uploaded) {
-        quotation.pdfUrl = uploaded.secure_url || quotation.pdfUrl;
-        quotation.cloudinaryPublicId = uploaded.public_id || quotation.cloudinaryPublicId;
+      try {
+        const uploaded = await uploadQuotationPdf(pdfBase64, `${safeClientName}_quotation`);
+        if (uploaded) {
+          quotation.pdfUrl = uploaded.secure_url || quotation.pdfUrl;
+          quotation.cloudinaryPublicId = uploaded.public_id || quotation.cloudinaryPublicId;
+        }
+      } catch (uploadErr) {
+        console.error(
+          "Quotation PDF upload failed during update (continuing):",
+          uploadErr?.message || uploadErr
+        );
       }
     }
 

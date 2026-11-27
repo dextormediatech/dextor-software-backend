@@ -99,14 +99,21 @@ export const createInvoice = async (req, res) => {
     let pdfUrl = "";
     let cloudinaryPublicId = "";
     if (pdfBase64) {
-      const uploaded = await uploadQuotationPdf(
-        pdfBase64,
-        `${safeClientName}_invoice`,
-        "dextor_mediatech/invoices"
-      );
-      if (uploaded) {
-        pdfUrl = uploaded.secure_url || "";
-        cloudinaryPublicId = uploaded.public_id || "";
+      try {
+        const uploaded = await uploadQuotationPdf(
+          pdfBase64,
+          `${safeClientName}_invoice`,
+          "dextor_mediatech/invoices"
+        );
+        if (uploaded) {
+          pdfUrl = uploaded.secure_url || "";
+          cloudinaryPublicId = uploaded.public_id || "";
+        }
+      } catch (uploadErr) {
+        console.error(
+          "Invoice PDF upload failed (saving invoice without cloud URL):",
+          uploadErr?.message || uploadErr
+        );
       }
     }
 
@@ -194,14 +201,21 @@ export const updateInvoice = async (req, res) => {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "_")
         .replace(/^_+|_+$/g, "");
-      const uploaded = await uploadQuotationPdf(
-        pdfBase64,
-        `${safeClientName}_invoice`,
-        "dextor_mediatech/invoices"
-      );
-      if (uploaded) {
-        invoice.pdfUrl = uploaded.secure_url || invoice.pdfUrl;
-        invoice.cloudinaryPublicId = uploaded.public_id || invoice.cloudinaryPublicId;
+      try {
+        const uploaded = await uploadQuotationPdf(
+          pdfBase64,
+          `${safeClientName}_invoice`,
+          "dextor_mediatech/invoices"
+        );
+        if (uploaded) {
+          invoice.pdfUrl = uploaded.secure_url || invoice.pdfUrl;
+          invoice.cloudinaryPublicId = uploaded.public_id || invoice.cloudinaryPublicId;
+        }
+      } catch (uploadErr) {
+        console.error(
+          "Invoice PDF upload failed during update (continuing):",
+          uploadErr?.message || uploadErr
+        );
       }
     }
 
