@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import Receipt from "../models/receipts.model.js";
 import Invoice from "../models/invoices.model.js";
+import Bill from "../models/bills.model.js";
+import Project from "../models/projects.model.js";
 
 /**
  * 1. Revenue Report (Based on payment-receipt)
@@ -357,6 +359,90 @@ export const getRevenueReport = async (req, res) => {
       })
       .sort((a, b) => b.revenue - a.revenue);
 
+    // 8. Margin Earned from Vendor Bills (Selling Price - Inhouse Price)
+    const billsAgg = await Bill.aggregate([
+      {
+        $group: {
+          _id: null,
+          billsCount: { $sum: 1 },
+          totalBillAmount: { $sum: "$billAmount" },
+          totalInhousePrice: { $sum: "$inhousePrice" },
+          totalSellingPrice: { $sum: "$sellingPrice" },
+          totalBillsMargin: {
+            $sum: { $subtract: ["$sellingPrice", "$inhousePrice"] },
+          },
+        },
+      },
+    ]);
+
+    const billsSummary = {
+      billsCount: billsAgg[0]?.billsCount || 0,
+      totalBillAmount: billsAgg[0]?.totalBillAmount || 0,
+      totalInhousePrice: billsAgg[0]?.totalInhousePrice || 0,
+      totalSellingPrice: billsAgg[0]?.totalSellingPrice || 0,
+      totalBillsMargin: billsAgg[0]?.totalBillsMargin || 0,
+    };
+
+    const billDocs = await Bill.find().sort({ createdAt: -1 }).lean();
+    const billsMarginList = billDocs.map((b) => {
+      const inhouse = Number(b.inhousePrice) || 0;
+      const selling = Number(b.sellingPrice) || 0;
+      return {
+        _id: b._id,
+        billNumber: b.billNumber,
+        billSubject: b.billSubject,
+        vendorName: b.vendorName,
+        projectTitle: b.projectDetails?.projectTitle || "",
+        billAmount: Number(b.billAmount) || 0,
+        inhousePrice: inhouse,
+        sellingPrice: selling,
+        margin: selling - inhouse,
+      };
+    });
+
+    // 9. Revenue Earned via Projects (paymentAmount collected on Projects)
+    const projectsAgg = await Project.aggregate([
+      {
+        $group: {
+          _id: null,
+          projectsCount: { $sum: 1 },
+          totalProjectValue: { $sum: "$amount" },
+          totalProjectsRevenue: { $sum: "$paymentAmount" },
+          paidProjectsCount: {
+            $sum: { $cond: [{ $eq: ["$paymentStatus", "Paid"] }, 1, 0] },
+          },
+          partialProjectsCount: {
+            $sum: { $cond: [{ $eq: ["$paymentStatus", "Partial"] }, 1, 0] },
+          },
+        },
+      },
+    ]);
+
+    const projectsSummary = {
+      projectsCount: projectsAgg[0]?.projectsCount || 0,
+      totalProjectValue: projectsAgg[0]?.totalProjectValue || 0,
+      totalProjectsRevenue: projectsAgg[0]?.totalProjectsRevenue || 0,
+      paidProjectsCount: projectsAgg[0]?.paidProjectsCount || 0,
+      partialProjectsCount: projectsAgg[0]?.partialProjectsCount || 0,
+    };
+
+    const projectDocs = await Project.find().sort({ paymentAmount: -1, createdAt: -1 }).lean();
+    const projectsRevenueList = projectDocs.map((p) => {
+      const amt = Number(p.amount) || 0;
+      const earned = Number(p.paymentAmount) || 0;
+      return {
+        _id: p._id,
+        projectTitle: p.projectTitle,
+        organizationName: p.clientDetails?.organizationName || "Client",
+        service: p.service || "",
+        amount: amt,
+        paymentAmount: earned,
+        paymentStatus: p.paymentStatus || "Unpaid",
+        status: p.status || "In process",
+        percentage: amt > 0 ? Math.min(100, Number(((earned / amt) * 100).toFixed(1))) : 0,
+      };
+    });
+
     return res.status(200).json({
       success: true,
       data: {
@@ -367,12 +453,18 @@ export const getRevenueReport = async (req, res) => {
           prevMonthRevenue,
           growthPercentage,
           currentYear,
+          totalBillsMargin: billsSummary.totalBillsMargin,
+          totalProjectsRevenue: projectsSummary.totalProjectsRevenue,
         },
         monthlyRevenue,
         quarterlyRevenue,
         yearlyRevenue,
         revenueByClient,
         revenueByService,
+        billsSummary,
+        billsMarginList,
+        projectsSummary,
+        projectsRevenueList,
       },
     });
   } catch (error) {

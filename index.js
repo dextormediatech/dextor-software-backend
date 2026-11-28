@@ -22,6 +22,8 @@ import receiptRoutes from "./routes/receipt.routes.js";
 import pipelineRoutes from "./routes/pipeline.routes.js";
 import leadRoutes from "./routes/lead.routes.js";
 import reportRoutes from "./routes/report.routes.js";
+import projectRoutes from "./routes/project.routes.js";
+import billRoutes from "./routes/bill.routes.js";
 
 dotenv.config();
 
@@ -60,6 +62,8 @@ app.use("/api/receipts", receiptRoutes);
 app.use("/api/pipelines", pipelineRoutes);
 app.use("/api/leads", leadRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/bills", billRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({
